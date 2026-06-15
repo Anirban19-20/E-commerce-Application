@@ -22,7 +22,10 @@ import com.anirban.service.ProductService;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+	    "https://nexabuy1.netlify.app",
+	    "http://localhost:3000"
+	})
 public class ProductController {
 	@Autowired
 	private ProductService productService;

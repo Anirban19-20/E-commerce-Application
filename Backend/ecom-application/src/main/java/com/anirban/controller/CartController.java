@@ -21,7 +21,10 @@ import com.anirban.service.CartService;
 
 @RestController
 @RequestMapping("/api/cart")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+	    "https://nexabuy1.netlify.app",
+	    "http://localhost:3000"
+	})
 public class CartController {
 	@Autowired
 	private CartService cartService;

@@ -19,7 +19,10 @@ import com.anirban.service.OrderService;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+	    "https://nexabuy1.netlify.app",
+	    "http://localhost:3000"
+	})
 public class OrderController {
 	@Autowired
 	private OrderService orderService;

@@ -21,7 +21,10 @@ import com.anirban.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+	    "https://nexabuy1.netlify.app",
+	    "http://localhost:3000"
+	})
 public class UserController {
 	@Autowired
 	private UserService userService;
