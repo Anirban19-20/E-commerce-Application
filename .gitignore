@@ -1,18 +1,4 @@
-# React
-node_modules/
-build/
-
-# Spring Boot
-target/
-*.class
-
-# IDE
+Frontend/ecom-frontend/node_modules/
+Backend/**/target/
 .vscode/
 .idea/
-
-# Environment files
-.env
-
-# OS files
-.DS_Store
-Thumbs.db
