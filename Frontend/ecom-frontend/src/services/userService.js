@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/users";
+const API_URL = "https://e-commerce-application-production-fc90.up.railway.app/api/users";
 
 // Get all users
 const getAllUsers = () => {

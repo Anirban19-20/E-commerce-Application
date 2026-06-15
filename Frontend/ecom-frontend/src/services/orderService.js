@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/orders";
+const API_URL = "https://e-commerce-application-production-fc90.up.railway.app/api/orders";
 
 const createOrder = (userId) => {
   return axios.post(
