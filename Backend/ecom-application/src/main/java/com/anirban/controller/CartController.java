@@ -45,7 +45,24 @@ public class CartController {
 	}
 	
 	@GetMapping
-	public ResponseEntity<List<CartItem>> getCart(@RequestHeader("X-User-ID") String userId){
-		return ResponseEntity.ok(cartService.getCart(userId));
+	public ResponseEntity<?> getCart(
+	        @RequestHeader("X-User-ID") String userId) {
+
+	    try {
+	        System.out.println("========== GET CART ==========");
+	        System.out.println("User ID: " + userId);
+
+	        List<CartItem> cartItems = cartService.getCart(userId);
+
+	        System.out.println("Cart Size: " + cartItems.size());
+
+	        return ResponseEntity.ok(cartItems);
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+
+	        return ResponseEntity.badRequest()
+	                .body("ERROR: " + e.getMessage());
+	    }
 	}
 }
