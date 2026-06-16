@@ -9,7 +9,7 @@ const Checkout = () => {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/cart", {
+        const res = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart", {
           headers: {
             "X-User-ID": userId,
           },
@@ -68,7 +68,7 @@ const Checkout = () => {
 
   const createOrder = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/orders", {
+      const res = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const Checkout = () => {
 
   const clearCart = async () => {
     try {
-      await fetch("http://localhost:8080/api/cart/clear", {
+      await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart/clear", {
         method: "DELETE",
         headers: {
           "X-User-ID": userId,

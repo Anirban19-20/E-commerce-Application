@@ -9,7 +9,7 @@ const Cart = () => {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/cart", {
+        const res = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart", {
           method: "GET",
           headers: {
             "X-User-ID": userId,
@@ -82,7 +82,7 @@ const Cart = () => {
   const removeItem = async (productId) => {
     try {
       await fetch(
-        `http://localhost:8080/api/cart/items/${productId}`,
+        `https://e-commerce-application-production-fc90.up.railway.app/api/cart/items/${productId}`,
         {
           method: "DELETE",
           headers: {
