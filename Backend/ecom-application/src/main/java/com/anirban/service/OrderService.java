@@ -63,7 +63,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setUser(user);
-        order.setStatus(OrderStatus.CONFIRMED);
+        order.setStatus(OrderStatus.PENDING);
         order.setTotalAmount(totalPrice);
 
         List<OrderItem> orderItems = cartItems.stream()
@@ -97,6 +97,35 @@ public class OrderService {
                 .stream()
                 .map(this::mapToOrderResponse)
                 .toList();
+    }
+    
+    public Optional<OrderResponse> getOrderById(Long orderId) {
+
+        return orderRepository.findById(orderId)
+                .map(this::mapToOrderResponse);
+    }
+    
+    public Optional<OrderResponse> updateOrderStatus(
+            Long orderId,
+            OrderStatus status) {
+
+        Optional<Order> orderOpt =
+                orderRepository.findById(orderId);
+
+        if(orderOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Order order = orderOpt.get();
+
+        order.setStatus(status);
+
+        Order updatedOrder =
+                orderRepository.save(order);
+
+        return Optional.of(
+                mapToOrderResponse(updatedOrder)
+        );
     }
 
     private OrderResponse mapToOrderResponse(Order order) {
@@ -138,4 +167,14 @@ public class OrderService {
                 order.getCreatedAt()
         );
     }
+    
+    public List<OrderResponse> getAllOrders() {
+
+        return orderRepository
+                .findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToOrderResponse)
+                .toList();
+    }
+    
 }

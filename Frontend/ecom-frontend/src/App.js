@@ -12,6 +12,8 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Checkout from "./pages/Checkout";
+import OrderTracking from "./pages/OrderTracking";
+import AdminOrders from "./pages/AdminOrders";
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -47,7 +49,9 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/orders/:id" element={<OrderTracking />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
       </Routes>
     </Router>
   );

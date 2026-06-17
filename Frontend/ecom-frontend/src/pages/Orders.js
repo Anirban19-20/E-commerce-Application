@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import orderService from "../services/orderService";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   const userId = localStorage.getItem("userId");
 
@@ -25,6 +28,47 @@ const Orders = () => {
       setLoading(false);
     }
   }, [userId]);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-warning text-dark";
+
+      case "CONFIRMED":
+        return "bg-info";
+
+      case "SHIPPED":
+        return "bg-primary";
+
+      case "DELIVERED":
+        return "bg-success";
+
+      case "CANCELLED":
+        return "bg-danger";
+
+      default:
+        return "bg-secondary";
+    }
+  };
+
+  const getProgress = (status) => {
+    switch (status) {
+      case "PENDING":
+        return 25;
+
+      case "CONFIRMED":
+        return 50;
+
+      case "SHIPPED":
+        return 75;
+
+      case "DELIVERED":
+        return 100;
+
+      default:
+        return 0;
+    }
+  };
 
   if (loading) {
     return (
@@ -59,13 +103,9 @@ const Orders = () => {
             <strong>Order #{order.id}</strong>
 
             <span
-              className={`badge ${
-                order.status === "DELIVERED"
-                  ? "bg-success"
-                  : order.status === "PENDING"
-                  ? "bg-warning text-dark"
-                  : "bg-primary"
-              }`}
+              className={`badge ${getStatusBadge(
+                order.status
+              )}`}
             >
               {order.status}
             </span>
@@ -90,13 +130,47 @@ const Orders = () => {
               </div>
             </div>
 
+            {/* Progress Bar */}
+
+            {order.status !== "CANCELLED" && (
+              <>
+                <div className="progress mb-3">
+                  <div
+                    className="progress-bar"
+                    role="progressbar"
+                    style={{
+                      width: `${getProgress(
+                        order.status
+                      )}%`,
+                    }}
+                  >
+                    {order.status}
+                  </div>
+                </div>
+
+                <div className="d-flex justify-content-between small text-muted mb-4">
+                  <span>PENDING</span>
+                  <span>CONFIRMED</span>
+                  <span>SHIPPED</span>
+                  <span>DELIVERED</span>
+                </div>
+              </>
+            )}
+
+            {order.status === "CANCELLED" && (
+              <div className="alert alert-danger">
+                This order has been cancelled.
+              </div>
+            )}
+
             <h5 className="mb-3">Order Items</h5>
 
             <div className="table-responsive">
-              <table className="table table-bordered table-hover">
+              <table className="table table-bordered align-middle">
                 <thead className="table-dark">
                   <tr>
-                    <th>Product ID</th>
+                    <th>Image</th>
+                    <th>Product</th>
                     <th>Quantity</th>
                     <th>Price</th>
                     <th>Subtotal</th>
@@ -106,17 +180,50 @@ const Orders = () => {
                 <tbody>
                   {order.items?.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.productId}</td>
+                      <td width="100">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          className="img-fluid"
+                          style={{
+                            height: "70px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </td>
 
-                      <td>{item.quantity}</td>
+                      <td>
+                        {item.productName}
+                      </td>
 
-                      <td>₹{item.price}</td>
+                      <td>
+                        {item.quantity}
+                      </td>
 
-                      <td>₹{item.subTotal}</td>
+                      <td>
+                        ₹{item.price}
+                      </td>
+
+                      <td>
+                        ₹{item.subTotal}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-3 text-end">
+              <button
+                className="btn btn-outline-primary"
+                onClick={() =>
+                  navigate(
+                    `/orders/${order.id}`
+                  )
+                }
+              >
+                Track Order
+              </button>
             </div>
           </div>
         </div>
