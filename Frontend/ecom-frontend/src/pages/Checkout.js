@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import paymentService from "../services/paymentService";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
   const navigate = useNavigate();
+
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const res = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart", {
-          headers: {
-            "X-User-ID": userId,
-          },
-        });
+        const res = await fetch(
+          "https://e-commerce-application-production-fc90.up.railway.app/api/cart",
+          {
+            headers: {
+              "X-User-ID": userId,
+            },
+          }
+        );
 
         if (!res.ok) {
           console.error("Cart API failed");
@@ -57,7 +62,9 @@ const Checkout = () => {
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
 
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
@@ -66,15 +73,18 @@ const Checkout = () => {
     });
   };
 
-  const createOrder = async () => {
+  const createNexaBuyOrder = async () => {
     try {
-      const res = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-ID": userId,
-        },
-      });
+      const res = await fetch(
+        "https://e-commerce-application-production-fc90.up.railway.app/api/orders",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-ID": userId,
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error("Order creation failed");
@@ -84,19 +94,6 @@ const Checkout = () => {
     } catch (err) {
       console.error(err);
       throw err;
-    }
-  };
-
-  const clearCart = async () => {
-    try {
-      await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart/clear", {
-        method: "DELETE",
-        headers: {
-          "X-User-ID": userId,
-        },
-      });
-    } catch (err) {
-      console.error("Cart clear failed", err);
     }
   };
 
@@ -114,41 +111,78 @@ const Checkout = () => {
       return;
     }
 
-    const options = {
-      key: "rzp_test_xxxxxxxxxxxxx", // Replace with your Razorpay Test Key
-      amount: Math.round(totalAmount * 100),
-      currency: "INR",
-      name: "NexaBuy",
-      description: "Order Payment",
+    try {
+      const response =
+        await paymentService.createOrder(
+          Math.round(totalAmount)
+        );
 
-      handler: async function (response) {
-        console.log("Payment Success:", response);
+      const data = response.data;
 
-        try {
-          await createOrder();
-          await clearCart();
+      const options = {
+        key: "rzp_test_T2cso3lMvXCgjI",
 
-          alert("Payment Successful!");
-          navigate("/orders");
-        } catch (err) {
-          console.error(err);
-          alert("Order failed after payment");
-        }
-      },
+        amount: data.amount,
 
-      prefill: {
-        name: "Customer",
-        email: "customer@example.com",
-        contact: "9999999999",
-      },
+        currency: data.currency,
 
-      theme: {
-        color: "#3399cc",
-      },
-    };
+        order_id: data.orderId,
 
-    const paymentObject = new window.Razorpay(options);
-    paymentObject.open();
+        name: "NexaBuy",
+
+        description: "Order Payment",
+
+        handler: async function (
+          paymentResponse
+        ) {
+          console.log(
+            "Payment Successful",
+            paymentResponse
+          );
+
+          try {
+            await createNexaBuyOrder();
+
+            alert(
+              "Payment Successful!"
+            );
+
+            navigate("/orders");
+          } catch (error) {
+            console.error(error);
+
+            alert(
+              "Order creation failed"
+            );
+          }
+        },
+
+        prefill: {
+          name: "Customer",
+          email:
+            "customer@example.com",
+          contact:
+            "9999999999",
+        },
+
+        theme: {
+          color: "#3399cc",
+        },
+      };
+
+      const razorpay =
+        new window.Razorpay(
+          options
+        );
+
+      razorpay.open();
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        "Payment initialization failed"
+      );
+    }
   };
 
   return (
@@ -161,14 +195,18 @@ const Checkout = () => {
 
           <button
             className="btn btn-primary mt-2"
-            onClick={() => navigate("/cart")}
+            onClick={() =>
+              navigate("/cart")
+            }
           >
             Go to Cart
           </button>
         </div>
       ) : (
         <div className="card p-4 mt-3 shadow">
-          <h4 className="mb-3">Order Summary</h4>
+          <h4 className="mb-3">
+            Order Summary
+          </h4>
 
           {cartItems.map((item) => (
             <div
@@ -176,11 +214,16 @@ const Checkout = () => {
               className="d-flex justify-content-between mb-2"
             >
               <span>
-                {item.name} × {item.quantity}
+                {item.name} ×{" "}
+                {item.quantity}
               </span>
 
               <span>
-                ₹{(item.price * item.quantity).toFixed(2)}
+                ₹
+                {(
+                  item.price *
+                  item.quantity
+                ).toFixed(2)}
               </span>
             </div>
           ))}
@@ -189,25 +232,44 @@ const Checkout = () => {
 
           <div className="d-flex justify-content-between">
             <span>Subtotal</span>
-            <strong>₹{subtotal.toFixed(2)}</strong>
+
+            <strong>
+              ₹
+              {subtotal.toFixed(
+                2
+              )}
+            </strong>
           </div>
 
           <div className="d-flex justify-content-between">
-            <span>GST (12%)</span>
-            <strong>₹{gst.toFixed(2)}</strong>
+            <span>
+              GST (12%)
+            </span>
+
+            <strong>
+              ₹{gst.toFixed(2)}
+            </strong>
           </div>
 
           <hr />
 
           <div className="d-flex justify-content-between">
             <h5>Total</h5>
-            <h5>₹{totalAmount.toFixed(2)}</h5>
+
+            <h5>
+              ₹
+              {totalAmount.toFixed(
+                2
+              )}
+            </h5>
           </div>
 
           <div className="text-center">
             <button
               className="btn btn-success mt-4 px-4"
-              onClick={handlePayment}
+              onClick={
+                handlePayment
+              }
             >
               Pay with Razorpay
             </button>

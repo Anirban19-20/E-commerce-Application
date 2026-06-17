@@ -4,6 +4,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 const NavbarLoggedIn = () => {
   const navigate = useNavigate();
