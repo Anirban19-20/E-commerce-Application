@@ -4,16 +4,25 @@ import paymentService from "../services/paymentService";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
+  const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
+    console.log("Logged User ID:", userId);
+
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     const fetchCart = async () => {
       try {
         const res = await fetch(
           "https://e-commerce-application-production-fc90.up.railway.app/api/cart",
           {
+            method: "GET",
             headers: {
               "X-User-ID": userId,
             },
@@ -21,7 +30,9 @@ const Checkout = () => {
         );
 
         if (!res.ok) {
-          console.error("Cart API failed");
+          const errorText = await res.text();
+          console.error("Cart API Error:", errorText);
+          setCartItems([]);
           return;
         }
 
@@ -33,22 +44,23 @@ const Checkout = () => {
           return;
         }
 
-        const formatted = data.map((item) => ({
+        const formattedCart = data.map((item) => ({
           id: item.product?.id,
           name: item.product?.name,
-          price: item.product?.price || 0,
-          quantity: item.quantity || 1,
+          price: Number(item.product?.price || 0),
+          quantity: Number(item.quantity || 1),
         }));
 
-        setCartItems(formatted);
-      } catch (err) {
-        console.error("Cart load failed", err);
+        setCartItems(formattedCart);
+      } catch (error) {
+        console.error("Cart load failed:", error);
+        setCartItems([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (userId) {
-      fetchCart();
-    }
+    fetchCart();
   }, [userId]);
 
   const subtotal = cartItems.reduce(
@@ -61,8 +73,15 @@ const Checkout = () => {
 
   const loadRazorpay = () => {
     return new Promise((resolve) => {
-      const script = document.createElement("script");
+      const existingScript = document.getElementById("razorpay-sdk");
 
+      if (existingScript) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = "razorpay-sdk";
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
 
       script.onload = () => resolve(true);
@@ -72,47 +91,31 @@ const Checkout = () => {
     });
   };
 
-  const createNexaBuyOrder = async (paymentResponse) => {
+  const createNexaBuyOrder = async () => {
     try {
-      const orderPayload = {
-        razorpayPaymentId: paymentResponse?.razorpay_payment_id,
-        razorpayOrderId: paymentResponse?.razorpay_order_id,
-        razorpaySignature: paymentResponse?.razorpay_signature,
-      };
-
-      console.log("Sending Order Payload:", orderPayload);
-
       const res = await fetch(
         "https://e-commerce-application-production-fc90.up.railway.app/api/orders",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             "X-User-ID": userId,
           },
-          body: JSON.stringify(orderPayload),
         }
       );
 
-      const responseText = await res.text();
+      const text = await res.text();
 
-      console.log("Order API Status:", res.status);
-      console.log("Order API Response:", responseText);
+      console.log("Order Status:", res.status);
+      console.log("Order Response:", text);
 
       if (!res.ok) {
-        throw new Error(
-          `Order creation failed (${res.status}): ${responseText}`
-        );
+        throw new Error(text || "Order creation failed");
       }
 
-      try {
-        return JSON.parse(responseText);
-      } catch {
-        return responseText;
-      }
-    } catch (err) {
-      console.error("Create Order Error:", err);
-      throw err;
+      return text ? JSON.parse(text) : {};
+    } catch (error) {
+      console.error("Order Creation Error:", error);
+      throw error;
     }
   };
 
@@ -123,10 +126,15 @@ const Checkout = () => {
       return;
     }
 
+    if (cartItems.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+
     const sdkLoaded = await loadRazorpay();
 
     if (!sdkLoaded) {
-      alert("Razorpay SDK failed to load");
+      alert("Failed to load Razorpay SDK");
       return;
     }
 
@@ -137,38 +145,31 @@ const Checkout = () => {
 
       const data = response.data;
 
-      console.log("Razorpay Order Response:", data);
-
       const options = {
         key: "rzp_test_T2cso3lMvXCgjI",
-
         amount: data.amount,
-
         currency: data.currency,
-
         order_id: data.orderId,
 
         name: "NexaBuy",
-
         description: "Order Payment",
 
-        handler: async function (paymentResponse) {
-          console.log(
-            "Payment Successful:",
-            paymentResponse
-          );
-
+        handler: async (paymentResponse) => {
           try {
-            await createNexaBuyOrder(paymentResponse);
+            console.log(
+              "Payment Successful:",
+              paymentResponse
+            );
 
-            alert("Payment Successful!");
+            await createNexaBuyOrder();
 
+            alert("Order placed successfully!");
             navigate("/orders");
           } catch (error) {
-            console.error("Order Creation Failed:", error);
+            console.error(error);
 
             alert(
-              "Payment succeeded but order creation failed. Check browser console."
+              "Payment successful but order creation failed."
             );
           }
         },
@@ -184,21 +185,36 @@ const Checkout = () => {
         },
       };
 
-      const razorpay = new window.Razorpay(options);
+      if (!window.Razorpay) {
+        alert("Razorpay SDK not loaded properly");
+        return;
+      }
 
+      const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
-      console.error("Payment Initialization Error:", error);
-
+      console.error("Payment Error:", error);
       alert("Payment initialization failed");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mt-5 text-center">
+        <h5>Loading...</h5>
+      </div>
+    );
+  }
 
   return (
     <div className="container mt-5">
       <h2>Checkout</h2>
 
-      {cartItems.length === 0 ? (
+      {!userId ? (
+        <div className="alert alert-warning mt-3">
+          Please login to continue.
+        </div>
+      ) : cartItems.length === 0 ? (
         <div className="text-center mt-4">
           <h5>Your cart is empty</h5>
 
