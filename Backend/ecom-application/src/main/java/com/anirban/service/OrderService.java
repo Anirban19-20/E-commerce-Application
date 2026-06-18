@@ -31,61 +31,69 @@ public class OrderService {
 
     public Optional<OrderResponse> createOrder(String userId) {
 
-        if (userId == null || userId.isEmpty()) {
-            throw new RuntimeException("UserId is missing");
+        try {
+
+            if (userId == null || userId.isBlank()) {
+                throw new RuntimeException("User ID is missing");
+            }
+
+            Optional<User> userOptional =
+                    userRepository.findById(Long.valueOf(userId));
+
+            if (userOptional.isEmpty()) {
+                throw new RuntimeException("User not found");
+            }
+
+            User user = userOptional.get();
+
+            List<CartItem> cartItems = cartService.getCart(userId);
+
+            if (cartItems == null || cartItems.isEmpty()) {
+                throw new RuntimeException("Cart is empty");
+            }
+
+            BigDecimal totalPrice = cartItems.stream()
+                    .filter(item -> item.getPrice() != null)
+                    .map(item ->
+                            item.getPrice().multiply(
+                                    BigDecimal.valueOf(item.getQuantity())
+                            )
+                    )
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            Order order = new Order();
+            order.setUser(user);
+            order.setStatus(OrderStatus.PENDING);
+            order.setTotalAmount(totalPrice);
+
+            List<OrderItem> orderItems = cartItems.stream()
+                    .map(item -> {
+                        OrderItem orderItem = new OrderItem();
+                        orderItem.setProduct(item.getProduct());
+                        orderItem.setQuantity(item.getQuantity());
+                        orderItem.setPrice(item.getPrice());
+                        orderItem.setOrder(order);
+                        return orderItem;
+                    })
+                    .toList();
+
+            order.setItems(orderItems);
+
+            Order savedOrder = orderRepository.save(order);
+
+            cartService.clearCart(userId);
+
+            return Optional.of(
+                    mapToOrderResponse(savedOrder)
+            );
+
+        } catch (Exception e) {
+
+            System.err.println("ORDER CREATION ERROR:");
+            e.printStackTrace();
+
+            throw e;
         }
-
-        Optional<User> userOptional =
-                userRepository.findById(Long.valueOf(userId));
-
-        if (userOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        User user = userOptional.get();
-
-        List<CartItem> cartItems =
-                cartService.getCart(userId);
-
-        if (cartItems == null || cartItems.isEmpty()) {
-            return Optional.empty();
-        }
-
-        BigDecimal totalPrice = cartItems.stream()
-                .map(item ->
-                        item.getPrice().multiply(
-                                BigDecimal.valueOf(
-                                        item.getQuantity()
-                                )
-                        )
-                )
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Order order = new Order();
-        order.setUser(user);
-        order.setStatus(OrderStatus.PENDING);
-        order.setTotalAmount(totalPrice);
-
-        List<OrderItem> orderItems = cartItems.stream()
-                .map(item -> new OrderItem(
-                        null,
-                        item.getProduct(),
-                        item.getQuantity(),
-                        item.getPrice(),
-                        order
-                ))
-                .toList();
-
-        order.setItems(orderItems);
-
-        Order savedOrder = orderRepository.save(order);
-
-        // Clear cart after successful order creation
-        cartService.clearCart(userId);
-
-        return Optional.of(
-                mapToOrderResponse(savedOrder)
-        );
     }
 
     public List<OrderResponse> getOrdersByUser(String userId) {
