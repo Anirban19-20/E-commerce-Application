@@ -21,22 +21,21 @@ public class PaymentController {
     private RazorpayService razorpayService;
 
     @PostMapping("/create-order")
-    public ResponseEntity<RazorpayOrderResponse>
-    createOrder(
-            @RequestBody
-            RazorpayOrderRequest request)
+    public ResponseEntity<RazorpayOrderResponse> createOrder(
+            @RequestBody RazorpayOrderRequest request)
             throws Exception {
 
-        Order order =
-                razorpayService.createOrder(
-                        request.getAmount()
-                );
+        Order order = razorpayService.createOrder(
+                request.getAmount()
+        );
+
+        Integer amount = ((Number) order.get("amount")).intValue();
 
         RazorpayOrderResponse response =
                 new RazorpayOrderResponse(
-                        order.get("id"),
-                        order.get("currency"),
-                        order.get("amount")
+                        String.valueOf(order.get("id")),
+                        String.valueOf(order.get("currency")),
+                        amount
                 );
 
         return ResponseEntity.ok(response);
