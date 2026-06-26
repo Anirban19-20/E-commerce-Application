@@ -31,10 +31,13 @@ public class PaymentController {
 
         Integer amount = ((Number) order.get("amount")).intValue();
 
+        String orderId = order.get("id").toString();
+        String currency = order.get("currency").toString();
+
         RazorpayOrderResponse response =
                 new RazorpayOrderResponse(
-                        String.valueOf(order.get("id")),
-                        String.valueOf(order.get("currency")),
+                        orderId,
+                        currency,
                         amount
                 );
 
