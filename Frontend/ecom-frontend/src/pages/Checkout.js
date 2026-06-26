@@ -69,7 +69,8 @@ const Checkout = () => {
   );
 
   const gst = subtotal * 0.12;
-  const totalAmount = subtotal + gst;
+  const platformFee = cartItems.length > 0 ? 10 : 0;
+  const totalAmount = subtotal + gst + platformFee;
 
   const loadRazorpay = () => {
     return new Promise((resolve) => {
@@ -140,13 +141,13 @@ const Checkout = () => {
 
     try {
       const response = await paymentService.createOrder(
-        Math.round(totalAmount)
+        Number(totalAmount.toFixed(2))
       );
 
       const data = response.data;
 
       const options = {
-        key: "rzp_test_T2cso3lMvXCgjI",
+        key: "rzp_test_T6A5IgpK7Zw3To",
         amount: data.amount,
         currency: data.currency,
         order_id: data.orderId,
@@ -254,6 +255,11 @@ const Checkout = () => {
           <div className="d-flex justify-content-between">
             <span>GST (12%)</span>
             <strong>₹{gst.toFixed(2)}</strong>
+          </div>
+
+          <div className="d-flex justify-content-between">
+            <span>Platform Fee</span>
+            <strong>₹{platformFee.toFixed(2)}</strong>
           </div>
 
           <hr />
