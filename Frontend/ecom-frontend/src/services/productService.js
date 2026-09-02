@@ -1,17 +1,37 @@
 import api from "./api";
 
-export const getProducts = async () => {
+// ==========================================
+// GET ALL PRODUCTS
+// ==========================================
 
-    const response =
-        await api.get("/api/products");
+const getAllProducts = async () => {
+  const response = await api.get(
+    "/api/products"
+  );
 
-    return response.data;
+  return response.data;
 };
 
-export const getProductById = async (id) => {
+// ==========================================
+// GET PRODUCT BY ID
+// ==========================================
 
-    const response =
-        await api.get(`/api/products/${id}`);
+const getProductById = async (id) => {
+  const response = await api.get(
+    `/api/products/${id}`
+  );
 
-    return response.data;
+  return response.data;
 };
+
+const productService = {
+  getAllProducts,
+  getProductById,
+};
+
+export {
+  getAllProducts,
+  getProductById,
+};
+
+export default productService;

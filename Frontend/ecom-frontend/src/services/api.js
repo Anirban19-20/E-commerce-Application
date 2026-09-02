@@ -1,16 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-
-    baseURL:
-        "https://nexabuy-backend.onrender.com",
-
-    headers: {
-
-        "Content-Type": "application/json"
-
-    }
-
+  baseURL: "https://nexabuy-backend.onrender.com",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 export default api;

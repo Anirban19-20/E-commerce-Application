@@ -1,12 +1,26 @@
 import api from "./api";
 
-export const createPaymentOrder = async (amount) => {
-    const response = await api.post(
-        "/api/payment/create-order",
-        {
-            amount
-        }
-    );
+// ==========================================
+// CREATE RAZORPAY ORDER
+// ==========================================
 
-    return response.data;
+const createPaymentOrder = async (amount) => {
+  const response = await api.post(
+    "/api/payment/create-order",
+    {
+      amount,
+    }
+  );
+
+  return response.data;
 };
+
+const paymentService = {
+  createPaymentOrder,
+};
+
+export {
+  createPaymentOrder,
+};
+
+export default paymentService;

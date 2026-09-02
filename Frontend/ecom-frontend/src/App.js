@@ -15,6 +15,14 @@ import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
 import AdminOrders from "./pages/AdminOrders";
 
+import AdminRoute from "./components/AdminRoute";
+
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminProducts from "./pages/AdminProducts";
+import AdminAddProduct from "./pages/AdminAddProduct";
+import AdminEditProduct from "./pages/AdminEditProduct";
+import AdminUsers from "./pages/AdminUsers";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
@@ -52,6 +60,34 @@ function App() {
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/orders/:id" element={<OrderTracking />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
+
+        <Route element={<AdminRoute />}>
+        <Route
+          path="/admin"
+          element={<AdminDashboard />}
+        />
+
+        <Route
+          path="/admin/products"
+          element={<AdminProducts />}
+        />
+
+        <Route
+          path="/admin/products/add"
+          element={<AdminAddProduct />}
+        />
+
+        <Route
+          path="/admin/products/edit/:id"
+          element={<AdminEditProduct />}
+        />
+
+        <Route
+          path="/admin/users"
+          element={<AdminUsers />}
+        />
+      </Route>
+
       </Routes>
     </Router>
   );

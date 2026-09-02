@@ -1,69 +1,127 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useNavigate,
+} from "react-router-dom";
+
 import productService from "../services/productService";
+
+import cartService from "../services/cartService";
 
 const ProductDetails = () => {
   const { id } = useParams();
+
   const navigate = useNavigate();
 
-  const [product, setProduct] = useState(null);
-  const [selectedImage, setSelectedImage] = useState("");
+  const [product, setProduct] =
+    useState(null);
+
+  const [selectedImage, setSelectedImage] =
+    useState("");
+
+  const [adding, setAdding] =
+    useState(false);
+
+  // ==========================================
+  // LOAD PRODUCT
+  // ==========================================
 
   useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const data =
+          await productService.getProductById(
+            id
+          );
+
+        setProduct(data);
+
+        setSelectedImage(
+          data?.imageUrl || ""
+        );
+      } catch (error) {
+        console.error(
+          "Error fetching product:",
+          error
+        );
+      }
+    };
+
     fetchProduct();
-  }, []);
+  }, [id]);
 
-  const fetchProduct = async () => {
-    try {
-      const response = await productService.getProductById(id);
-
-      setProduct(response.data);
-      setSelectedImage(response.data.imageUrl);
-    } catch (error) {
-      console.error("Error fetching product:", error);
-    }
-  };
+  // ==========================================
+  // DELIVERY DATE
+  // ==========================================
 
   const getDeliveryDate = () => {
     const date = new Date();
 
     date.setDate(date.getDate() + 5);
 
-    return date.toLocaleDateString("en-IN", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }
+    );
   };
+
+  // ==========================================
+  // ADD TO CART
+  // ==========================================
 
   const addToCart = async () => {
-    try {
-      const userId = localStorage.getItem("userId");
+    const userId =
+      localStorage.getItem("userId");
 
-      const response = await fetch("https://nexabuy-backend.onrender.com/api/cart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-ID": userId,
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1,
-        }),
-      });
+    if (!userId) {
+      alert("Please login first");
 
-      if (!response.ok) {
-        throw new Error("Failed to add product");
-      }
+      navigate("/login");
 
-      alert("Product added to cart!");
-      return true;
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add product");
       return false;
     }
+
+    if (!product) {
+      return false;
+    }
+
+    try {
+      setAdding(true);
+
+      await cartService.addToCart(
+        userId,
+        product.id,
+        1
+      );
+
+      alert("Product added to cart!");
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Add to cart failed:",
+        error
+      );
+
+      alert("Failed to add product");
+
+      return false;
+    } finally {
+      setAdding(false);
+    }
   };
+
+  // ==========================================
+  // BUY NOW
+  // ==========================================
 
   const buyNow = async () => {
     const success = await addToCart();
@@ -79,7 +137,7 @@ const ProductDetails = () => {
         <div
           className="spinner-border text-primary"
           role="status"
-        ></div>
+        />
       </div>
     );
   }
@@ -87,7 +145,8 @@ const ProductDetails = () => {
   return (
     <div className="container py-5">
       <div className="row">
-        {/* Left Side - Images */}
+        {/* LEFT */}
+
         <div className="col-md-6">
           <div className="card shadow border-0">
             <img
@@ -102,7 +161,6 @@ const ProductDetails = () => {
             />
           </div>
 
-          {/* Thumbnails */}
           <div className="d-flex gap-2 mt-3 flex-wrap">
             <img
               src={product.imageUrl}
@@ -115,7 +173,9 @@ const ProductDetails = () => {
                 cursor: "pointer",
               }}
               onClick={() =>
-                setSelectedImage(product.imageUrl)
+                setSelectedImage(
+                  product.imageUrl
+                )
               }
             />
 
@@ -124,7 +184,7 @@ const ProductDetails = () => {
                 <img
                   key={index}
                   src={image}
-                  alt={`Product ${index}`}
+                  alt={`Product ${index + 1}`}
                   className="border rounded"
                   width="80"
                   height="80"
@@ -141,10 +201,12 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Right Side - Product Info */}
+        {/* RIGHT */}
+
         <div className="col-md-6">
           <span className="badge bg-primary mb-3">
-            {product.category}
+            {product.category?.name ||
+              product.category}
           </span>
 
           <h1 className="fw-bold">
@@ -162,9 +224,12 @@ const ProductDetails = () => {
                   FREE Delivery
                 </span>
               </p>
+
               <p className="mb-0">
                 Delivery by{" "}
-                <strong>{getDeliveryDate()}</strong>
+                <strong>
+                  {getDeliveryDate()}
+                </strong>
               </p>
             </div>
           </div>
@@ -197,15 +262,23 @@ const ProductDetails = () => {
             <button
               className="btn btn-dark btn-lg"
               onClick={addToCart}
-              disabled={product.stockQuantity <= 0}
+              disabled={
+                adding ||
+                product.stockQuantity <= 0
+              }
             >
-              Add To Cart
+              {adding
+                ? "Adding..."
+                : "Add To Cart"}
             </button>
 
             <button
               className="btn btn-success btn-lg"
               onClick={buyNow}
-              disabled={product.stockQuantity <= 0}
+              disabled={
+                adding ||
+                product.stockQuantity <= 0
+              }
             >
               Buy Now
             </button>

@@ -1,122 +1,253 @@
 import React, {
   useEffect,
-  useState
+  useState,
 } from "react";
 
-import orderService
-from "../services/orderService";
+import AdminNavbar from "../components/AdminNavbar";
+
+import adminService from "../services/adminService";
 
 const AdminOrders = () => {
-
   const [orders, setOrders] =
-      useState([]);
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [updatingId,
+    setUpdatingId] =
+    useState(null);
+
+  // ==========================================
+  // LOAD ORDERS
+  // ==========================================
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+
+      const data =
+        await adminService.getOrders();
+
+      setOrders(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+
+      setError("");
+    } catch (error) {
+      console.error(
+        "Orders load failed:",
+        error
+      );
+
+      setError(
+        "Failed to load orders"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadOrders();
   }, []);
 
-  const loadOrders = () => {
-    orderService
-      .getAllOrders()
-      .then((res) => {
-        setOrders(res.data);
-      });
-  };
+  // ==========================================
+  // STATUS
+  // ==========================================
 
-  const handleStatusChange = (
-    orderId,
-    status
-  ) => {
+  const handleStatusChange =
+    async (
+      orderId,
+      status
+    ) => {
+      try {
+        setUpdatingId(
+          orderId
+        );
 
-    orderService
-      .updateOrderStatus(
-        orderId,
-        status
-      )
-      .then(() => {
-        loadOrders();
-      });
-  };
+        await adminService.updateOrderStatus(
+          orderId,
+          status
+        );
+
+        await loadOrders();
+      } catch (error) {
+        console.error(
+          "Status update failed:",
+          error
+        );
+
+        alert(
+          "Failed to update order status"
+        );
+      } finally {
+        setUpdatingId(null);
+      }
+    };
 
   return (
-    <div className="container py-5">
+    <>
+      <AdminNavbar />
 
-      <h2 className="mb-4">
-        Admin Orders
-      </h2>
+      <div className="container py-5">
+        <div className="mb-4">
+          <h2 className="fw-bold">
+            Order Management
+          </h2>
 
-      <table className="table table-bordered">
+          <p className="text-muted">
+            View customer orders and
+            update delivery status.
+          </p>
+        </div>
 
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Update</th>
-          </tr>
-        </thead>
+        {error && (
+          <div className="alert alert-danger">
+            {error}
+          </div>
+        )}
 
-        <tbody>
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="alert alert-info">
+            No orders found.
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-bordered align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th>Order</th>
 
-          {orders.map(order => (
+                  <th>Date</th>
 
-            <tr key={order.id}>
+                  <th>Items</th>
 
-              <td>{order.id}</td>
+                  <th>Total</th>
 
-              <td>
-                ₹{order.totalAmount}
-              </td>
+                  <th>Status</th>
 
-              <td>
-                {order.status}
-              </td>
+                  <th>Update</th>
+                </tr>
+              </thead>
 
-              <td>
+              <tbody>
+                {orders.map(
+                  (order) => (
+                    <tr
+                      key={
+                        order.id
+                      }
+                    >
+                      <td>
+                        #
+                        {order.id}
+                      </td>
 
-                <select
-                  value={order.status}
-                  onChange={(e) =>
-                    handleStatusChange(
-                      order.id,
-                      e.target.value
-                    )
-                  }
-                  className="form-select"
-                >
-                  <option>
-                    PENDING
-                  </option>
+                      <td>
+                        {order.createdAt
+                          ? new Date(
+                              order.createdAt
+                            ).toLocaleString()
+                          : "-"}
+                      </td>
 
-                  <option>
-                    CONFIRMED
-                  </option>
+                      <td>
+                        {order.items
+                          ?.length ||
+                          0}
+                      </td>
 
-                  <option>
-                    SHIPPED
-                  </option>
+                      <td>
+                        ₹
+                        {Number(
+                          order.totalAmount ||
+                            0
+                        ).toFixed(
+                          2
+                        )}
+                      </td>
 
-                  <option>
-                    DELIVERED
-                  </option>
+                      <td>
+                        <span
+                          className={`badge ${
+                            order.status ===
+                            "DELIVERED"
+                              ? "bg-success"
+                              : order.status ===
+                                "CANCELLED"
+                              ? "bg-danger"
+                              : order.status ===
+                                "SHIPPED"
+                              ? "bg-primary"
+                              : "bg-warning text-dark"
+                          }`}
+                        >
+                          {
+                            order.status
+                          }
+                        </span>
+                      </td>
 
-                  <option>
-                    CANCELLED
-                  </option>
+                      <td>
+                        <select
+                          className="form-select"
+                          value={
+                            order.status
+                          }
+                          disabled={
+                            updatingId ===
+                            order.id
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            handleStatusChange(
+                              order.id,
+                              e.target
+                                .value
+                            )
+                          }
+                        >
+                          <option value="PENDING">
+                            PENDING
+                          </option>
 
-                </select>
+                          <option value="CONFIRMED">
+                            CONFIRMED
+                          </option>
 
-              </td>
+                          <option value="SHIPPED">
+                            SHIPPED
+                          </option>
 
-            </tr>
+                          <option value="DELIVERED">
+                            DELIVERED
+                          </option>
 
-          ))}
-
-        </tbody>
-
-      </table>
-
-    </div>
+                          <option value="CANCELLED">
+                            CANCELLED
+                          </option>
+                        </select>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 

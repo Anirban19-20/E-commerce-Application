@@ -1,140 +1,319 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  Link,
+} from "react-router-dom";
+
+import cartService from "../services/cartService";
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [updatingId, setUpdatingId] =
+    useState(null);
+
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
 
-  useEffect(() => {
-    const fetchCart = async () => {
+  const userId =
+    localStorage.getItem("userId");
+
+  // ==========================================
+  // LOAD CART
+  // ==========================================
+
+  const loadCart = useCallback(
+    async () => {
+      if (!userId) {
+        setCartItems([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch("https://nexabuy-backend.onrender.com/api/cart", {
-          method: "GET",
-          headers: {
-            "X-User-ID": userId,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch cart");
-        }
-
-        const data = await res.json();
+        const data =
+          await cartService.getCart(
+            userId
+          );
 
         if (!Array.isArray(data)) {
-          console.error("Invalid cart response:", data);
+          console.error(
+            "Invalid cart response:",
+            data
+          );
+
           setCartItems([]);
+
           return;
         }
 
-        const formatted = data.map((item) => ({
-          id: item.product?.id,
-          name: item.product?.name,
-          price: item.product?.price || 0,
-          category: item.product?.category || "",
-          description: item.product?.description || "",
-          imageUrl: item.product?.imageUrl || "",
-          quantity: item.quantity || 1,
-        }));
+        const formatted = data.map(
+          (item) => ({
+            id: item.product?.id,
+
+            name:
+              item.product?.name || "",
+
+            price: Number(
+              item.product?.price || 0
+            ),
+
+            category:
+              item.product?.category?.name ||
+              item.product?.category ||
+              "",
+
+            description:
+              item.product?.description ||
+              "",
+
+            imageUrl:
+              item.product?.imageUrl || "",
+
+            quantity: Number(
+              item.quantity || 1
+            ),
+          })
+        );
 
         setCartItems(formatted);
-      } catch (err) {
-        console.error("Failed to load cart", err);
+      } catch (error) {
+        console.error(
+          "Failed to load cart:",
+          error
+        );
+
         setCartItems([]);
+      } finally {
+        setLoading(false);
       }
-    };
+    },
+    [userId]
+  );
 
-    if (userId) {
-      fetchCart();
-    }
-  }, [userId]);
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
 
-  const increaseQuantity = (id) => {
-    const updated = cartItems.map((item) =>
-      item.id === id && item.quantity < 10
-        ? { ...item, quantity: item.quantity + 1 }
-        : item
+  // ==========================================
+  // INCREASE QUANTITY
+  // ==========================================
+
+  const increaseQuantity = async (
+    productId
+  ) => {
+    const item = cartItems.find(
+      (cartItem) =>
+        cartItem.id === productId
     );
 
-    setCartItems(updated);
-  };
-
-  const decreaseQuantity = async (id) => {
-    const item = cartItems.find((i) => i.id === id);
-
-    if (!item) return;
-
-    if (item.quantity === 1) {
-      await removeItem(id);
+    if (
+      !item ||
+      item.quantity >= 10
+    ) {
       return;
     }
 
-    const updated = cartItems.map((i) =>
-      i.id === id
-        ? { ...i, quantity: i.quantity - 1 }
-        : i
-    );
-
-    setCartItems(updated);
-  };
-
-  const removeItem = async (productId) => {
     try {
-      await fetch(
-        `https://nexabuy-backend.onrender.com/api/cart/items/${productId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-User-ID": userId,
-          },
-        }
+      setUpdatingId(productId);
+
+      await cartService.setQuantity(
+        userId,
+        productId,
+        item.quantity + 1
       );
 
-      setCartItems((prev) =>
-        prev.filter((item) => item.id !== productId)
+      await loadCart();
+    } catch (error) {
+      console.error(
+        "Increase quantity failed:",
+        error
       );
-    } catch (err) {
-      console.error("Remove failed", err);
+
+      alert(
+        "Failed to update quantity"
+      );
+    } finally {
+      setUpdatingId(null);
     }
   };
 
+  // ==========================================
+  // DECREASE QUANTITY
+  // ==========================================
+
+  const decreaseQuantity = async (
+    productId
+  ) => {
+    const item = cartItems.find(
+      (cartItem) =>
+        cartItem.id === productId
+    );
+
+    if (!item) {
+      return;
+    }
+
+    try {
+      setUpdatingId(productId);
+
+      if (item.quantity <= 1) {
+        await cartService.removeFromCart(
+          userId,
+          productId
+        );
+      } else {
+        await cartService.setQuantity(
+          userId,
+          productId,
+          item.quantity - 1
+        );
+      }
+
+      await loadCart();
+    } catch (error) {
+      console.error(
+        "Decrease quantity failed:",
+        error
+      );
+
+      alert(
+        "Failed to update quantity"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ==========================================
+  // REMOVE ITEM
+  // ==========================================
+
+  const removeItem = async (
+    productId
+  ) => {
+    try {
+      setUpdatingId(productId);
+
+      await cartService.removeFromCart(
+        userId,
+        productId
+      );
+
+      await loadCart();
+    } catch (error) {
+      console.error(
+        "Remove failed:",
+        error
+      );
+
+      alert(
+        "Failed to remove product"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ==========================================
+  // TOTALS
+  // ==========================================
+
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum +
+      item.price * item.quantity,
     0
   );
 
   const gst = subtotal * 0.12;
-  const platformFee = cartItems.length > 0 ? 10 : 0;
-  const totalAmount = subtotal + gst + platformFee;
 
-  const totalItems = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
+  const platformFee =
+    cartItems.length > 0 ? 10 : 0;
+
+  const totalAmount =
+    subtotal + gst + platformFee;
+
+  const totalItems =
+    cartItems.reduce(
+      (sum, item) =>
+        sum + item.quantity,
+      0
+    );
 
   const getDeliveryDate = () => {
     const date = new Date();
 
     date.setDate(date.getDate() + 5);
 
-    return date.toLocaleDateString("en-IN", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }
+    );
   };
 
-  const handleCheckout = () => {
-    navigate("/checkout");
-  };
+  // ==========================================
+  // LOADING
+  // ==========================================
+
+  if (loading) {
+    return (
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary" />
+      </div>
+    );
+  }
+
+  // ==========================================
+  // NOT LOGGED IN
+  // ==========================================
+
+  if (!userId) {
+    return (
+      <div className="container mt-5 text-center">
+        <h2>Please Login</h2>
+
+        <p className="text-muted">
+          Login to view your shopping
+          cart.
+        </p>
+
+        <button
+          className="btn btn-primary"
+          onClick={() =>
+            navigate("/login")
+          }
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // EMPTY CART
+  // ==========================================
 
   if (cartItems.length === 0) {
     return (
       <div className="container mt-5 text-center">
         <h2>Your Cart is Empty</h2>
+
         <p className="text-muted">
-          Add products to continue shopping.
+          Add products to continue
+          shopping.
         </p>
 
         <button
@@ -149,7 +328,9 @@ const Cart = () => {
 
   return (
     <div className="container my-5">
-      <h2 className="fw-bold mb-4">Shopping Cart</h2>
+      <h2 className="fw-bold mb-4">
+        Shopping Cart
+      </h2>
 
       <div className="row">
         <div className="col-lg-8">
@@ -161,13 +342,17 @@ const Cart = () => {
               <div className="card-body">
                 <div className="row align-items-center">
                   <div className="col-md-3 text-center">
-                    <Link to={`/product/${item.id}`}>
+                    <Link
+                      to={`/products/${item.id}`}
+                    >
                       <img
                         src={item.imageUrl}
                         className="img-fluid rounded"
                         style={{
-                          maxHeight: "150px",
-                          cursor: "pointer",
+                          maxHeight:
+                            "150px",
+                          cursor:
+                            "pointer",
                         }}
                         alt={item.name}
                       />
@@ -175,7 +360,9 @@ const Cart = () => {
                   </div>
 
                   <div className="col-md-5">
-                    <h5>{item.name}</h5>
+                    <h5>
+                      {item.name}
+                    </h5>
 
                     <p className="text-muted">
                       {item.category}
@@ -183,41 +370,68 @@ const Cart = () => {
 
                     <button
                       className="btn btn-danger btn-sm"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() =>
+                        removeItem(
+                          item.id
+                        )
+                      }
+                      disabled={
+                        updatingId ===
+                        item.id
+                      }
                     >
                       Remove
                     </button>
                   </div>
 
                   <div className="col-md-4 text-center">
-                    <h5>₹{item.price}</h5>
+                    <h5>
+                      ₹{item.price}
+                    </h5>
 
                     <div className="d-flex justify-content-center align-items-center gap-2">
                       <button
                         className="btn btn-outline-danger"
                         onClick={() =>
-                          decreaseQuantity(item.id)
+                          decreaseQuantity(
+                            item.id
+                          )
+                        }
+                        disabled={
+                          updatingId ===
+                          item.id
                         }
                       >
                         -
                       </button>
 
-                      <span>{item.quantity}</span>
+                      <span>
+                        {item.quantity}
+                      </span>
 
                       <button
                         className="btn btn-outline-success"
                         onClick={() =>
-                          increaseQuantity(item.id)
+                          increaseQuantity(
+                            item.id
+                          )
                         }
-                        disabled={item.quantity >= 10}
+                        disabled={
+                          item.quantity >=
+                            10 ||
+                          updatingId ===
+                            item.id
+                        }
                       >
                         +
                       </button>
                     </div>
 
                     <h6 className="mt-2">
-                      ₹{(
-                        item.price * item.quantity
+                      ₹
+                      {(
+                        item.price *
+                        item.quantity
                       ).toFixed(2)}
                     </h6>
                   </div>
@@ -229,49 +443,76 @@ const Cart = () => {
 
         <div className="col-lg-4">
           <div className="card shadow border-0 p-3">
-            <h4>Order Summary</h4>
+            <h4>
+              Order Summary
+            </h4>
 
             <div className="d-flex justify-content-between">
               <span>Items</span>
-              <strong>{totalItems}</strong>
+
+              <strong>
+                {totalItems}
+              </strong>
             </div>
 
             <div className="d-flex justify-content-between">
               <span>Subtotal</span>
+
               <strong>
                 ₹{subtotal.toFixed(2)}
               </strong>
             </div>
 
             <div className="d-flex justify-content-between">
-              <span>GST (12%)</span>
+              <span>
+                GST (12%)
+              </span>
+
               <strong>
                 ₹{gst.toFixed(2)}
               </strong>
             </div>
 
             <div className="d-flex justify-content-between">
-              <span>Platform Fee</span>
-              <strong>₹{platformFee}</strong>
+              <span>
+                Platform Fee
+              </span>
+
+              <strong>
+                ₹{platformFee}
+              </strong>
             </div>
 
             <div className="d-flex justify-content-between">
-              <span>Delivery By</span>
-              <strong>{getDeliveryDate()}</strong>
+              <span>
+                Delivery By
+              </span>
+
+              <strong>
+                {getDeliveryDate()}
+              </strong>
             </div>
 
             <hr />
 
             <div className="d-flex justify-content-between">
               <h5>Total</h5>
+
               <h5>
-                ₹{totalAmount.toFixed(2)}
+                ₹
+                {totalAmount.toFixed(
+                  2
+                )}
               </h5>
             </div>
 
             <button
               className="btn btn-success w-100 mt-3"
-              onClick={handleCheckout}
+              onClick={() =>
+                navigate(
+                  "/checkout"
+                )
+              }
             >
               Checkout
             </button>

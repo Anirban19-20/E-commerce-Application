@@ -1,59 +1,79 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import paymentService from "../services/paymentService";
 
+import cartService from "../services/cartService";
+
+import orderService from "../services/orderService";
+
 const Checkout = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [cartItems, setCartItems] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [paying, setPaying] =
+    useState(false);
 
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+
+  const userId =
+    localStorage.getItem("userId");
+
+  // ==========================================
+  // LOAD CART
+  // ==========================================
 
   useEffect(() => {
-    console.log("Logged User ID:", userId);
-
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
     const fetchCart = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch(
-          "https://nexabuy-backend.onrender.com/api/cart",
-          {
-            method: "GET",
-            headers: {
-              "X-User-ID": userId,
-            },
-          }
-        );
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Cart API Error:", errorText);
-          setCartItems([]);
-          return;
-        }
-
-        const data = await res.json();
+        const data =
+          await cartService.getCart(
+            userId
+          );
 
         if (!Array.isArray(data)) {
-          console.error("Invalid cart response:", data);
           setCartItems([]);
           return;
         }
 
-        const formattedCart = data.map((item) => ({
-          id: item.product?.id,
-          name: item.product?.name,
-          price: Number(item.product?.price || 0),
-          quantity: Number(item.quantity || 1),
-        }));
+        const formattedCart = data.map(
+          (item) => ({
+            id: item.product?.id,
 
-        setCartItems(formattedCart);
+            name:
+              item.product?.name || "",
+
+            price: Number(
+              item.product?.price || 0
+            ),
+
+            quantity: Number(
+              item.quantity || 1
+            ),
+          })
+        );
+
+        setCartItems(
+          formattedCart
+        );
       } catch (error) {
-        console.error("Cart load failed:", error);
+        console.error(
+          "Cart load failed:",
+          error
+        );
+
         setCartItems([]);
       } finally {
         setLoading(false);
@@ -63,99 +83,136 @@ const Checkout = () => {
     fetchCart();
   }, [userId]);
 
+  // ==========================================
+  // TOTAL
+  // ==========================================
+
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum +
+      item.price * item.quantity,
     0
   );
 
   const gst = subtotal * 0.12;
-  const platformFee = cartItems.length > 0 ? 10 : 0;
-  const totalAmount = subtotal + gst + platformFee;
 
-  const loadRazorpay = () => {
-    return new Promise((resolve) => {
-      const existingScript = document.getElementById("razorpay-sdk");
+  const platformFee =
+    cartItems.length > 0 ? 10 : 0;
+
+  const totalAmount =
+    subtotal + gst + platformFee;
+
+  // ==========================================
+  // LOAD RAZORPAY
+  // ==========================================
+
+  const loadRazorpay = () =>
+    new Promise((resolve) => {
+      const existingScript =
+        document.getElementById(
+          "razorpay-sdk"
+        );
 
       if (existingScript) {
         resolve(true);
         return;
       }
 
-      const script = document.createElement("script");
+      const script =
+        document.createElement(
+          "script"
+        );
+
       script.id = "razorpay-sdk";
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
 
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
 
-      document.body.appendChild(script);
-    });
-  };
+      script.onload = () =>
+        resolve(true);
 
-  const createNexaBuyOrder = async () => {
-    try {
-      const res = await fetch(
-        "https://nexabuy-backend.onrender.com/api/orders",
-        {
-          method: "POST",
-          headers: {
-            "X-User-ID": userId,
-          },
-        }
+      script.onerror = () =>
+        resolve(false);
+
+      document.body.appendChild(
+        script
       );
+    });
 
-      const text = await res.text();
+  // ==========================================
+  // CREATE NEXABUY ORDER
+  // ==========================================
 
-      console.log("Order Status:", res.status);
-      console.log("Order Response:", text);
+  const createNexaBuyOrder =
+    async () => {
+      return orderService.createOrder(
+        userId
+      );
+    };
 
-      if (!res.ok) {
-        throw new Error(text || "Order creation failed");
-      }
-
-      return text ? JSON.parse(text) : {};
-    } catch (error) {
-      console.error("Order Creation Error:", error);
-      throw error;
-    }
-  };
+  // ==========================================
+  // PAYMENT
+  // ==========================================
 
   const handlePayment = async () => {
     if (!userId) {
       alert("Please login first");
+
       navigate("/login");
+
       return;
     }
 
     if (cartItems.length === 0) {
       alert("Your cart is empty");
-      return;
-    }
 
-    const sdkLoaded = await loadRazorpay();
-
-    if (!sdkLoaded) {
-      alert("Failed to load Razorpay SDK");
       return;
     }
 
     try {
-      const response = await paymentService.createOrder(
-        Number(totalAmount.toFixed(2))
-      );
+      setPaying(true);
 
-      const data = response.data;
+      const sdkLoaded =
+        await loadRazorpay();
+
+      if (!sdkLoaded) {
+        alert(
+          "Failed to load Razorpay SDK"
+        );
+
+        return;
+      }
+
+      const data =
+        await paymentService.createPaymentOrder(
+          Number(
+            totalAmount.toFixed(2)
+          )
+        );
 
       const options = {
-        key: "rzp_test_T6A5IgpK7Zw3To",
+        key:
+          process.env
+            .REACT_APP_RAZORPAY_KEY_ID ||
+          "rzp_test_T6A5IgpK7Zw3To",
+
         amount: data.amount,
-        currency: data.currency,
-        order_id: data.orderId,
+
+        currency:
+          data.currency || "INR",
+
+        order_id:
+          data.orderId ||
+          data.id,
 
         name: "NexaBuy",
-        description: "Order Payment",
 
-        handler: async (paymentResponse) => {
+        description:
+          "Order Payment",
+
+        handler: async (
+          paymentResponse
+        ) => {
           try {
             console.log(
               "Payment Successful:",
@@ -164,10 +221,16 @@ const Checkout = () => {
 
             await createNexaBuyOrder();
 
-            alert("Order placed successfully!");
+            alert(
+              "Order placed successfully!"
+            );
+
             navigate("/orders");
           } catch (error) {
-            console.error(error);
+            console.error(
+              "Order creation failed:",
+              error
+            );
 
             alert(
               "Payment successful but order creation failed."
@@ -177,7 +240,8 @@ const Checkout = () => {
 
         prefill: {
           name: "Customer",
-          email: "customer@example.com",
+          email:
+            "customer@example.com",
           contact: "9999999999",
         },
 
@@ -187,17 +251,36 @@ const Checkout = () => {
       };
 
       if (!window.Razorpay) {
-        alert("Razorpay SDK not loaded properly");
+        alert(
+          "Razorpay SDK not loaded properly"
+        );
+
         return;
       }
 
-      const razorpay = new window.Razorpay(options);
+      const razorpay =
+        new window.Razorpay(
+          options
+        );
+
       razorpay.open();
     } catch (error) {
-      console.error("Payment Error:", error);
-      alert("Payment initialization failed");
+      console.error(
+        "Payment Error:",
+        error
+      );
+
+      alert(
+        "Payment initialization failed"
+      );
+    } finally {
+      setPaying(false);
     }
   };
+
+  // ==========================================
+  // LOADING
+  // ==========================================
 
   if (loading) {
     return (
@@ -217,18 +300,24 @@ const Checkout = () => {
         </div>
       ) : cartItems.length === 0 ? (
         <div className="text-center mt-4">
-          <h5>Your cart is empty</h5>
+          <h5>
+            Your cart is empty
+          </h5>
 
           <button
             className="btn btn-primary mt-2"
-            onClick={() => navigate("/cart")}
+            onClick={() =>
+              navigate("/cart")
+            }
           >
             Go to Cart
           </button>
         </div>
       ) : (
         <div className="card p-4 mt-3 shadow">
-          <h4 className="mb-3">Order Summary</h4>
+          <h4 className="mb-3">
+            Order Summary
+          </h4>
 
           {cartItems.map((item) => (
             <div
@@ -236,11 +325,16 @@ const Checkout = () => {
               className="d-flex justify-content-between mb-2"
             >
               <span>
-                {item.name} × {item.quantity}
+                {item.name} ×{" "}
+                {item.quantity}
               </span>
 
               <span>
-                ₹{(item.price * item.quantity).toFixed(2)}
+                ₹
+                {(
+                  item.price *
+                  item.quantity
+                ).toFixed(2)}
               </span>
             </div>
           ))}
@@ -248,33 +342,60 @@ const Checkout = () => {
           <hr />
 
           <div className="d-flex justify-content-between">
-            <span>Subtotal</span>
-            <strong>₹{subtotal.toFixed(2)}</strong>
+            <span>
+              Subtotal
+            </span>
+
+            <strong>
+              ₹{subtotal.toFixed(2)}
+            </strong>
           </div>
 
           <div className="d-flex justify-content-between">
-            <span>GST (12%)</span>
-            <strong>₹{gst.toFixed(2)}</strong>
+            <span>
+              GST (12%)
+            </span>
+
+            <strong>
+              ₹{gst.toFixed(2)}
+            </strong>
           </div>
 
           <div className="d-flex justify-content-between">
-            <span>Platform Fee</span>
-            <strong>₹{platformFee.toFixed(2)}</strong>
+            <span>
+              Platform Fee
+            </span>
+
+            <strong>
+              ₹
+              {platformFee.toFixed(
+                2
+              )}
+            </strong>
           </div>
 
           <hr />
 
           <div className="d-flex justify-content-between">
             <h5>Total</h5>
-            <h5>₹{totalAmount.toFixed(2)}</h5>
+
+            <h5>
+              ₹
+              {totalAmount.toFixed(
+                2
+              )}
+            </h5>
           </div>
 
           <div className="text-center">
             <button
               className="btn btn-success mt-4 px-4"
               onClick={handlePayment}
+              disabled={paying}
             >
-              Pay with Razorpay
+              {paying
+                ? "Processing..."
+                : "Pay with Razorpay"}
             </button>
           </div>
         </div>

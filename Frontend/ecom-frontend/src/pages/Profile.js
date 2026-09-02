@@ -1,46 +1,78 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import userService from "../services/userService";
 
 const Profile = () => {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    const loadProfile = async () => {
+      try {
+        const userId =
+          localStorage.getItem(
+            "userId"
+          );
 
-  const loadProfile = async () => {
-    try {
-      const userId = localStorage.getItem("userId");
+        if (!userId) {
+          navigate("/login");
 
-      if (!userId) {
-        navigate("/login");
-        return;
+          return;
+        }
+
+        const data =
+          await userService.getUserById(
+            userId
+          );
+
+        setUser(data);
+      } catch (error) {
+        console.error(
+          "Profile load failed:",
+          error
+        );
+
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const response = await userService.getUserById(userId);
-
-      setUser(response.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadProfile();
+  }, [navigate]);
 
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem(
+      "isLoggedIn"
+    );
+
+    localStorage.removeItem(
+      "userId"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
+
     navigate("/login");
+
     window.location.reload();
   };
 
   if (loading) {
     return (
       <div className="container text-center mt-5">
-        <div className="spinner-border"></div>
+        <div className="spinner-border" />
       </div>
     );
   }
@@ -55,11 +87,8 @@ const Profile = () => {
 
   return (
     <div className="container py-5">
-
       <div className="card shadow border-0">
-
         <div className="card-header bg-dark text-white text-center py-4">
-
           <img
             src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
             alt="profile"
@@ -68,17 +97,16 @@ const Profile = () => {
           />
 
           <h3>
-            {user.firstName} {user.lastName}
+            {user.firstName}{" "}
+            {user.lastName}
           </h3>
 
           <p className="mb-0">
             {user.role}
           </p>
-
         </div>
 
         <div className="card-body p-4">
-
           <h4 className="mb-4">
             Personal Information
           </h4>
@@ -87,6 +115,7 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               First Name
             </div>
+
             <div className="col-md-9">
               {user.firstName}
             </div>
@@ -96,6 +125,7 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Last Name
             </div>
+
             <div className="col-md-9">
               {user.lastName}
             </div>
@@ -105,6 +135,7 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Email
             </div>
+
             <div className="col-md-9">
               {user.email}
             </div>
@@ -114,6 +145,7 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Phone
             </div>
+
             <div className="col-md-9">
               {user.phone}
             </div>
@@ -129,8 +161,10 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Street
             </div>
+
             <div className="col-md-9">
-              {user.address?.street}
+              {user.address?.street ||
+                "-"}
             </div>
           </div>
 
@@ -138,8 +172,10 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               City
             </div>
+
             <div className="col-md-9">
-              {user.address?.city}
+              {user.address?.city ||
+                "-"}
             </div>
           </div>
 
@@ -147,8 +183,10 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               State
             </div>
+
             <div className="col-md-9">
-              {user.address?.state}
+              {user.address?.state ||
+                "-"}
             </div>
           </div>
 
@@ -156,8 +194,10 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Country
             </div>
+
             <div className="col-md-9">
-              {user.address?.country}
+              {user.address?.country ||
+                "-"}
             </div>
           </div>
 
@@ -165,10 +205,13 @@ const Profile = () => {
             <div className="col-md-3 fw-bold">
               Zipcode
             </div>
+
             <div className="col-md-9">
-              {user.address?.zipcode}
+              {user.address?.zipcode ||
+                "-"}
             </div>
           </div>
+
           <div className="text-center">
             <button
               className="btn btn-danger"
@@ -177,11 +220,8 @@ const Profile = () => {
               Logout
             </button>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };
