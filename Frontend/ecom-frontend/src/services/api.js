@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://e-commerce-application-production-fc90.up.railway.app"
+  baseURL: "https://nexabuy-backend.onrender.com"
 });
 
 export default api;

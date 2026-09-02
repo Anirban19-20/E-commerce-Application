@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_URL =
-  "https://e-commerce-application-production-fc90.up.railway.app/api/orders";
+  "https://nexabuy-backend.onrender.com/api/orders";
 
 // Create Order
 const createOrder = (userId) => {

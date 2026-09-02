@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://e-commerce-application-production-fc90.up.railway.app/api/users";
+const API_URL = "https://nexabuy-backend.onrender.com/api/users";
 
 // Get all users
 const getAllUsers = () => {

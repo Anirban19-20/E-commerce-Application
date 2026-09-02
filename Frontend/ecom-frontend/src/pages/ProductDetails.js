@@ -40,7 +40,7 @@ const ProductDetails = () => {
     try {
       const userId = localStorage.getItem("userId");
 
-      const response = await fetch("https://e-commerce-application-production-fc90.up.railway.app/api/cart", {
+      const response = await fetch("https://nexabuy-backend.onrender.com/api/cart", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

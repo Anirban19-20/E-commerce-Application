@@ -20,7 +20,7 @@ const Checkout = () => {
     const fetchCart = async () => {
       try {
         const res = await fetch(
-          "https://e-commerce-application-production-fc90.up.railway.app/api/cart",
+          "https://nexabuy-backend.onrender.com/api/cart",
           {
             method: "GET",
             headers: {
@@ -95,7 +95,7 @@ const Checkout = () => {
   const createNexaBuyOrder = async () => {
     try {
       const res = await fetch(
-        "https://e-commerce-application-production-fc90.up.railway.app/api/orders",
+        "https://nexabuy-backend.onrender.com/api/orders",
         {
           method: "POST",
           headers: {
