@@ -1,19 +1,23 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import NavbarLoggedIn from "./components/NavbarLoggedIn";
 
 import Home from "./pages/Home";
-import ProductDetails from "./pages/ProductDetails";
-import Cart from "./pages/Cart";
-import Orders from "./pages/Orders";
-import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import OrderTracking from "./pages/OrderTracking";
-import AdminOrders from "./pages/AdminOrders";
+import Orders from "./pages/Orders";
+import ProductDetails from "./pages/ProductDetails";
+import Profile from "./pages/Profile";
 
 import AdminRoute from "./components/AdminRoute";
 
@@ -21,75 +25,127 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminProducts from "./pages/AdminProducts";
 import AdminAddProduct from "./pages/AdminAddProduct";
 import AdminEditProduct from "./pages/AdminEditProduct";
+import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
 
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
+function AppContent() {
 
-function App() {
+  const location = useLocation();
+
   const isLoggedIn =
     localStorage.getItem("isLoggedIn") === "true";
 
+  // Hide normal navbar on every admin page
+  const isAdminPage =
+    location.pathname.startsWith("/admin");
+
   return (
-    <Router>
-      {isLoggedIn ? (
-        <NavbarLoggedIn />
-      ) : (
-        <Navbar />
+    <>
+      {/* NORMAL CUSTOMER NAVBAR */}
+
+      {!isAdminPage && (
+        isLoggedIn
+          ? <NavbarLoggedIn />
+          : <Navbar />
       )}
 
       <Routes>
-        <Route path="/" element={<Home />} />
+
+        {/* ============================= */}
+        {/* CUSTOMER ROUTES */}
+        {/* ============================= */}
 
         <Route
-          path="/product/:id"
+          path="/"
+          element={<Home />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        <Route
+          path="/products/:id"
           element={<ProductDetails />}
         />
 
-        <Route path="/cart" element={<Cart />} />
+        <Route
+          path="/cart"
+          element={<Cart />}
+        />
 
-        <Route path="/orders" element={<Orders />} />
+        <Route
+          path="/checkout"
+          element={<Checkout />}
+        />
 
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/orders"
+          element={<Orders />}
+        />
 
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/profile"
+          element={<Profile />}
+        />
 
-        <Route path="/register" element={<Register />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
-        <Route path="/orders/:id" element={<OrderTracking />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
+
+        {/* ============================= */}
+        {/* ADMIN ROUTES */}
+        {/* ============================= */}
 
         <Route element={<AdminRoute />}>
-        <Route
-          path="/admin"
-          element={<AdminDashboard />}
-        />
 
-        <Route
-          path="/admin/products"
-          element={<AdminProducts />}
-        />
+          <Route
+            path="/admin"
+            element={<AdminDashboard />}
+          />
 
-        <Route
-          path="/admin/products/add"
-          element={<AdminAddProduct />}
-        />
+          <Route
+            path="/admin/products"
+            element={<AdminProducts />}
+          />
 
-        <Route
-          path="/admin/products/edit/:id"
-          element={<AdminEditProduct />}
-        />
+          <Route
+            path="/admin/products/add"
+            element={<AdminAddProduct />}
+          />
 
-        <Route
-          path="/admin/users"
-          element={<AdminUsers />}
-        />
-      </Route>
+          <Route
+            path="/admin/products/edit/:id"
+            element={<AdminEditProduct />}
+          />
+
+          <Route
+            path="/admin/orders"
+            element={<AdminOrders />}
+          />
+
+          <Route
+            path="/admin/users"
+            element={<AdminUsers />}
+          />
+
+        </Route>
 
       </Routes>
-    </Router>
+    </>
+  );
+}
+
+
+function App() {
+
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
