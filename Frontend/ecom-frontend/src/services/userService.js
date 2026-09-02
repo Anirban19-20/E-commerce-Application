@@ -1,38 +1,85 @@
-import axios from "axios";
+import api from "./api";
 
-const API_URL = "https://nexabuy-backend.onrender.com/api/users";
+// ==========================================
+// GET ALL USERS
+// ==========================================
 
-// Get all users
-const getAllUsers = () => {
-  return axios.get(API_URL);
+const getAllUsers = async () => {
+
+    const response = await api.get("/api/users");
+
+    return response.data;
 };
 
-// Get user by ID
-const getUserById = (id) => {
-  return axios.get(`${API_URL}/${id}`);
+
+// ==========================================
+// GET USER BY ID
+// ==========================================
+
+const getUserById = async (id) => {
+
+    const response = await api.get(`/api/users/${id}`);
+
+    return response.data;
 };
 
-// Register new user
-const registerUser = (user) => {
-  return axios.post(API_URL, user);
+
+// ==========================================
+// REGISTER NEW USER
+// ==========================================
+
+const registerUser = async (user) => {
+
+    const response = await api.post(
+        "/api/users",
+        user
+    );
+
+    return response.data;
 };
 
-// Update user
-const updateUser = (id, user) => {
-  return axios.put(`${API_URL}/${id}`, user);
+
+// ==========================================
+// UPDATE USER
+// ==========================================
+
+const updateUser = async (id, user) => {
+
+    const response = await api.put(
+        `/api/users/${id}`,
+        user
+    );
+
+    return response.data;
 };
 
-// Delete user
-const deleteUser = (id) => {
-  return axios.delete(`${API_URL}/${id}`);
+
+// ==========================================
+// DELETE USER
+// ==========================================
+
+const deleteUser = async (id) => {
+
+    const response = await api.delete(
+        `/api/users/${id}`
+    );
+
+    return response.data;
 };
+
 
 const userService = {
-  getAllUsers,
-  getUserById,
-  registerUser,
-  updateUser,
-  deleteUser,
+
+    getAllUsers,
+
+    getUserById,
+
+    registerUser,
+
+    updateUser,
+
+    deleteUser
+
 };
 
 export default userService;

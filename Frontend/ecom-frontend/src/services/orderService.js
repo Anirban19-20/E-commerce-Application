@@ -1,47 +1,16 @@
-import axios from "axios";
+import api from "./api";
 
-const API_URL =
-  "https://nexabuy-backend.onrender.com/api/orders";
+export const createPaymentOrder = async (amount) => {
 
-// Create Order
-const createOrder = (userId) => {
-  return axios.post(
-    API_URL,
-    {},
-    {
-      headers: {
-        "X-User-ID": userId,
-      },
-    }
-  );
-};
+    const response = await api.post(
 
-// Get orders of a specific user
-const getOrdersByUser = (userId) => {
-  return axios.get(`${API_URL}/user/${userId}`);
-};
+        "/api/payment/create-order",
 
-// Get single order by ID (Tracking Page)
-const getOrderById = (orderId) => {
-  return axios.get(`${API_URL}/${orderId}`);
-};
+        {
+            amount
+        }
 
-// Get all orders (Admin Dashboard)
-const getAllOrders = () => {
-  return axios.get(`${API_URL}/admin`);
-};
+    );
 
-// Update order status (Admin Dashboard)
-const updateOrderStatus = (orderId, status) => {
-  return axios.post(
-    `${API_URL}/${orderId}/status/${status}`
-  );
-};
-
-export default {
-  createOrder,
-  getOrdersByUser,
-  getOrderById,
-  getAllOrders,
-  updateOrderStatus,
+    return response.data;
 };

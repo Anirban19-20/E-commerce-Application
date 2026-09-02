@@ -1,17 +1,12 @@
-import axios from "axios";
+import api from "./api";
 
-const API_URL =
-"https://nexabuy-backend.onrender.com/api/payment";
+export const createPaymentOrder = async (amount) => {
+    const response = await api.post(
+        "/api/payment/create-order",
+        {
+            amount
+        }
+    );
 
-const createOrder = (amount) => {
-  return axios.post(
-    `${API_URL}/create-order`,
-    {
-      amount,
-    }
-  );
-};
-
-export default {
-  createOrder,
+    return response.data;
 };
